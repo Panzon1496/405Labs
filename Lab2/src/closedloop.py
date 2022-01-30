@@ -53,9 +53,9 @@ class ClosedLoop:
     def update (self, read, tdif):
         '''! @brief Constructs a closed loop controller and records the time and postion to the motor
             @details Sets saturation limits to what is determined by task_hardware and instantiates error variables.
-            @details Uses a loop to record the position and time of the motor 100 times as it moves.
-            @details Once it has finished the 100th recording, prints the values of all 100 positons and time.
-            @details Resets the recording flag back to false, waiting for the next set
+            Uses a loop to record the position and time of the motor 100 times as it moves.
+            Once it has finished the 100th recording, prints the values of all 100 positons and time.
+            Resets the recording flag back to false, waiting for the next set
             @param read is the motor reading the new values from the encoder.
             @param tdif is the difference of time between recordings.
             @return Sends back actuation signal value using sat method.
@@ -96,32 +96,36 @@ class ClosedLoop:
 
 
     
-    '''! @brief Function that resets the setpoint and begins to record the current time.
-        @details Also resets the lists for positions and times
-    '''
-    def set_setpoint(self, point): 
+    
+    def set_setpoint(self, point):
+        '''! @brief Function that resets the setpoint and begins to record the current time.
+            @details Also resets the lists for positions and times
+        '''    
         self.setpoint = point
         self.to = self.Time()
         self.record()
 
 
-    '''! @brief Function that sets the controller gains
-    '''
+
     def set_control_gain(self, gain):
+        '''! @brief Function that sets the controller gains
+        ''' 
         self.Kp = gain
         
         
-    '''! @brief Function that rests the the values in the lists for positions and times
-        @details Also changes the recording flag to true so that it allows the computer to begin recording values
-    '''     
+    
     def record(self):
+        '''! @brief Function that rests the the values in the lists for positions and times
+            @details Also changes the recording flag to true so that it allows the computer to begin recording values
+        '''         
         self.times = []
         self.positions = []
         self.recording = True
         
         
-    '''! @brief Function that prints the values in the lists for positions and times
-    '''    
+   
     def print_values(self):
+        '''! @brief Function that prints the values in the lists for positions and times
+        '''         
         for i in range(len(self.times)):
             print(str(self.times[i]) + "," + str(self.positions[i]))
