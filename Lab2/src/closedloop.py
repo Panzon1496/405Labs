@@ -21,56 +21,58 @@ class ClosedLoop:
     def __init__ (self, Kp, setpoint = 0, Ki = 0, Kd = 0, satLim = [-100,100]):
         '''!@brief Constructs a closed loop controller
             @details Sets saturation limits to what is determined by task_hardware and instantiates error variables.
-            @param satLim is a list containing the upper and lower bounds of saturation      
+            @param satLim is a list containing the upper and lower bounds of saturation, between -100 and 100    
         '''
         ## @brief Instantiates gains and setpoint
+        
+        ## Kp is the proportional gain
         self.Kp = Kp
+        ## Kd is the derivitive gain
         self.Kd = Kd
+        ## Kd is the integral gain
         self.Ki = Ki
+        ## Setpoint is the goal point, the point which the motors attempts to reach
         self.setpoint = setpoint
-        # PID Kp(*%/rad)Ki(*%/rad)Kd(*%s2/rad)
         ## @brief Instantiates duty saturation upper and lower bounds
         self.satLim = satLim
-        
         ## @brief Sum of error over a difference in time
         self.esum = 0
         ## @brief Previous error
         self.laste = 0
-        
-        '''@ creates an object that will keep track of time and the rate of time it takes to count each tick
-        Also creates two lists, so that position and time can be measured and put into a graph in order
-        to be able to see the PID controller in a visual sense. Create a recording object and initiate to false
-        '''
+        ## A counter using ms
         self.Time = utime.ticks_ms
+        ## A value that keeps the current time
         self.to = self.Time()
+        ## A list that keeps track of the times
         self.times = []
+        ## A list that keep tracks of the poisitons
         self.positions = []
+        ## A flag that determines whether or not the function is recording, set to false or not recording
         self.recording = False
 
     def update (self, read, tdif):
-        ''' @brief Constructs a closed loop controller
+        '''! @brief Constructs a closed loop controller and records the time and postion to the motor
             @details Sets saturation limits to what is determined by task_hardware and instantiates error variables.
-            @param satLim is a list containing the upper and lower bounds of saturation    
-            @return Sends back saturated duty value using sat method.
+            @details Uses a loop to record the position and time of the motor 100 times as it moves.
+            @details Once it has finished the 100th recording, prints the values of all 100 positons and time.
+            @details Resets the recording flag back to false, waiting for the next set
+            @param read is the motor reading the new values from the encoder.
+            @param tdif is the difference of time between recordings.
+            @return Sends back actuation signal value using sat method.
         '''
-        ## @brief Error signal which is the difference between the expected setpoint and the measured value [read].
+        # Error signal which is the difference between the expected setpoint and the measured value [read].
         e = self.setpoint - read
         #Updates sum of error (area under curve)
         self.esum += (self.laste+e)*tdif/2
-        ## @brief Delta error calculated by taking difference in error values over a time difference
+        #  Delta error calculated by taking difference in error values over a time difference
         dele = (e - self.laste)/tdif
         # Updates last error
         self.laste = e
-        
-        ## @brief Actuation signal (in duty cycle) calculation using gains and error values
+        # Actuation signal (in duty cycle) calculation using gains and error values
         actuation_signal = self.Kp*(e) + self.Ki*(self.esum) + self.Kd*(dele)
         
         
-        ''' A loop that that records the current time and position of the motor 100 times.
-            After each recording, it adds the newest postion and time into the lists and once
-            100 recordings have beeen achieved, it prints all the values of these lists then resets
-            recording object back to false. Then prints the word STOP.
-        '''
+       
         if(len(self.times) < 100 and self.recording):
             self.times.append(utime.ticks_diff(self.Time(),self.to))
             self.positions.append(read)
@@ -78,11 +80,10 @@ class ClosedLoop:
             self.print_values()
             self.recording = False
             print("#STOP#")
-        ## Returns the actuation signal which tells the motor how much duty it should give for the next cycle 
         return self.sat(actuation_signal)
                 
     def sat(self,duty):
-        ''' @brief Saturation functionallity
+        '''! @brief Saturation functionallity
             @details Controls if a duty is too large from what is calculated in update method.
             @param duty is the value sent by what is calculated in update method.
             @return Sends back either the saturated limit if duty is too high or original duty based on bounds.
@@ -94,27 +95,33 @@ class ClosedLoop:
         return duty
 
 
-    ## Function that sets the current postion and time as the starting point and time,
-    ## and then begins to record the new values.
-    def set_setpoint(self, point):
+    
+    '''! @brief Function that resets the setpoint and begins to record the current time.
+        @details Also resets the lists for positions and times
+    '''
+    def set_setpoint(self, point): 
         self.setpoint = point
         self.to = self.Time()
         self.record()
 
-    ##  Function that set the gain in controller
+
+    '''! @brief Function that sets the controller gains
+    '''
     def set_control_gain(self, gain):
         self.Kp = gain
         
         
-    ## Function that clears the values in the lists, time and position, and set the recording object to true
-    ## which allows the code to begin recording the new values of the positon and time
+    '''! @brief Function that rests the the values in the lists for positions and times
+        @details Also changes the recording flag to true so that it allows the computer to begin recording values
+    '''     
     def record(self):
         self.times = []
         self.positions = []
         self.recording = True
         
         
-    ##Function that prints the values of the two lists, postion and time
+    '''! @brief Function that prints the values in the lists for positions and times
+    '''    
     def print_values(self):
         for i in range(len(self.times)):
             print(str(self.times[i]) + "," + str(self.positions[i]))
